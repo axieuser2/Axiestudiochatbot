@@ -7,6 +7,7 @@ export async function sendChatMessage(message: string, sessionId: string) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         message,
