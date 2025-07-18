@@ -69,6 +69,22 @@ const ChatInterface: React.FC = () => {
 
       // Check for booking popup trigger
       if (data.showBookingPopup) {
+        // Show a nice message before opening the popup
+        const bookingMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!',
+          sender: 'bot',
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, bookingMessage]);
+        setIsTyping(false);
+        setIsLoading(false);
+        
+        // Open the booking modal after a short delay
+        setTimeout(() => {
+          setShowBookingModal(true);
+        }, 500);
         setShowBookingModal(true);
         setIsTyping(false);
         setIsLoading(false);
