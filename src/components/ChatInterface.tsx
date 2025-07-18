@@ -67,46 +67,31 @@ const ChatInterface: React.FC = () => {
       const data: ChatResponse = await sendChatMessage(messageText, sessionId.current);
       setConnectionStatus('connected');
 
-      // Check for booking popup trigger
-      if (data.showBookingPopup || (data.output && data.output.showBookingPopup)) {
-        // Show a nice message before opening the popup
-        const bookingMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!',
-          sender: 'bot',
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, bookingMessage]);
-        setIsTyping(false);
-        setIsLoading(false);
-        
-        // Open the booking modal after a short delay
-        setTimeout(() => {
-          setShowBookingModal(true);
-        }, 500);
-        return;
-      }
-
       // Simulate typing delay for better UX
       setTimeout(() => {
-        // Parse the response properly - don't show raw JSON
+        // Check if response contains showBookingPopup
+        let shouldShowBooking = false;
         let responseText = '';
         
         if (typeof data === 'string') {
           try {
             const parsed = JSON.parse(data);
-            if (parsed.showBookingPopup) {
-              // This should have been caught above, but just in case
-              setShowBookingModal(true);
-              return;
+            shouldShowBooking = parsed.showBookingPopup === true;
+            if (shouldShowBooking) {
+              responseText = 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!';
+            } else {
+              responseText = parsed.message || parsed.response || parsed.output || 'Jag fick ditt meddelande.';
             }
-            responseText = parsed.message || parsed.response || parsed.output || 'Jag fick ditt meddelande.';
           } catch {
             responseText = data;
           }
         } else {
-          responseText = data.message || data.response || data.output || 'Jag fick ditt meddelande.';
+          shouldShowBooking = data.showBookingPopup === true;
+          if (shouldShowBooking) {
+            responseText = 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!';
+          } else {
+            responseText = data.message || data.response || data.output || 'Jag fick ditt meddelande.';
+          }
         }
 
         const botMessage: Message = {
@@ -119,6 +104,13 @@ const ChatInterface: React.FC = () => {
         setMessages(prev => [...prev, botMessage]);
         setIsTyping(false);
         setIsLoading(false);
+        
+        // Open booking modal if needed
+        if (shouldShowBooking) {
+          setTimeout(() => {
+            setShowBookingModal(true);
+          }, 500);
+        }
       }, 1000);
 
     } catch (error) {
