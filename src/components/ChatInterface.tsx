@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Calendar, X, MessageCircle, Loader2, Palette } from 'lucide-react';
+import { sendChatMessage } from '../api/chat';
 
 interface Message {
   id: string;
@@ -23,8 +24,8 @@ const ChatInterface: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionId = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
-  const WEBHOOK_URL = 'https://stefan0987.app.n8n.cloud/webhook/156b9b80-a524-4116-9b0a-f93aa729a5ea';
   const BOOKING_IFRAME_URL = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0QR3uRxVB7rb4ZHqJ1qYmz-T0e2CFtV5MYekvGDq1qyWxsV_Av3nP3zEGk0DrH2HqpTLoXuK0h';
 
   useEffect(() => {
@@ -63,29 +64,12 @@ const ChatInterface: React.FC = () => {
     setConnectionStatus('connecting');
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: messageText,
-          timestamp: new Date().toISOString(),
-          sessionId: `session_${Date.now()}`
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ChatResponse = await response.json();
+      const data: ChatResponse = await sendChatMessage(messageText, sessionId.current);
       setConnectionStatus('connected');
 
       // Check for booking popup trigger
       if (data.showBookingPopup) {
         setShowBookingModal(true);
-        // Don't add a message for the booking popup
         setIsTyping(false);
         setIsLoading(false);
         return;
@@ -95,7 +79,7 @@ const ChatInterface: React.FC = () => {
       setTimeout(() => {
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.message || 'I received your message.',
+          text: data.message || 'Jag fick ditt meddelande.',
           sender: 'bot',
           timestamp: new Date()
         };
@@ -147,22 +131,32 @@ const ChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-white">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+      <div className="bg-black shadow-lg border-b border-gray-800 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <Palette className="w-5 h-5 text-white" />
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+              <img 
+                src="/c09c673465270e53fed0666cae1a9b69.ico/favicon-32x32.png" 
+                alt="Axie Studio" 
+                className="w-6 h-6"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <Palette className="w-6 h-6 text-black hidden" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Axie Studio Assistent</h1>
+              <h1 className="text-xl font-bold text-white">Axie Studio</h1>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  connectionStatus === 'connected' ? 'bg-green-500' : 
-                  connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                  connectionStatus === 'connected' ? 'bg-green-400' : 
+                  connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
                 }`} />
-                <span className="text-sm text-gray-600 capitalize">
+                <span className="text-sm text-gray-300 capitalize">
                   {connectionStatus === 'connected' ? 'ansluten' : 
                    connectionStatus === 'connecting' ? 'ansluter' : 'frånkopplad'}
                 </span>
@@ -171,7 +165,7 @@ const ChatInterface: React.FC = () => {
           </div>
           <button
             onClick={openBookingPopup}
-            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+            className="flex items-center space-x-2 px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
           >
             <Calendar className="w-4 h-4" />
             <span>Boka Möte</span>
@@ -180,34 +174,70 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                message.sender === 'user'
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
-                  : 'bg-white text-gray-800 shadow-sm border border-gray-200'
-              }`}
-            >
-              <p className="text-sm">{message.text}</p>
-              <p className={`text-xs mt-1 ${
-                message.sender === 'user' ? 'text-purple-100' : 'text-gray-500'
-              }`}>
-                {formatTime(message.timestamp)}
-              </p>
+            <div className="flex items-end space-x-3 max-w-xs lg:max-w-md">
+              {message.sender === 'bot' && (
+                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+                  <img 
+                    src="/c09c673465270e53fed0666cae1a9b69.ico/favicon-16x16.png" 
+                    alt="Bot" 
+                    className="w-4 h-4"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <MessageCircle className="w-4 h-4 text-white hidden" />
+                </div>
+              )}
+              <div
+                className={`px-4 py-3 rounded-2xl shadow-md ${
+                  message.sender === 'user'
+                    ? 'bg-black text-white rounded-br-md'
+                    : 'bg-white text-black border border-gray-200 rounded-bl-md'
+                }`}
+              >
+                <p className="text-sm leading-relaxed">{message.text}</p>
+                <p className={`text-xs mt-2 ${
+                  message.sender === 'user' ? 'text-gray-300' : 'text-gray-500'
+                }`}>
+                  {formatTime(message.timestamp)}
+                </p>
+              </div>
             </div>
           </div>
         ))}
         
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white text-gray-800 shadow-sm border border-gray-200 px-4 py-2 rounded-lg flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Skriver...</span>
+            <div className="flex items-end space-x-3">
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                <img 
+                  src="/c09c673465270e53fed0666cae1a9b69.ico/favicon-16x16.png" 
+                  alt="Bot" 
+                  className="w-4 h-4"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <MessageCircle className="w-4 h-4 text-white hidden" />
+              </div>
+              <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-bl-md flex items-center space-x-2 shadow-md">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span className="text-sm text-gray-600">Skriver...</span>
+              </div>
             </div>
           </div>
         )}
@@ -216,7 +246,7 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4">
+      <div className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
         <form onSubmit={handleSubmit} className="flex space-x-4">
           <input
             ref={inputRef}
@@ -226,12 +256,12 @@ const ChatInterface: React.FC = () => {
             onKeyPress={handleKeyPress}
             placeholder="Skriv ditt meddelande..."
             disabled={isLoading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 transition-all duration-200"
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black focus:ring-0 disabled:opacity-50 transition-all duration-300 text-black placeholder-gray-500"
           />
           <button
             type="submit"
             disabled={isLoading || !inputValue.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg"
+            className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-medium"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -245,20 +275,30 @@ const ChatInterface: React.FC = () => {
 
       {/* Booking Modal */}
       {showBookingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-gray-200">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-black">
               <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Palette className="w-3 h-3 text-white" />
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <img 
+                    src="/c09c673465270e53fed0666cae1a9b69.ico/favicon-16x16.png" 
+                    alt="Axie Studio" 
+                    className="w-4 h-4"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <Calendar className="w-4 h-4 text-black hidden" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Boka Möte - Axie Studio</h2>
+                <h2 className="text-xl font-bold text-white">Boka Möte - Axie Studio</h2>
               </div>
               <button
                 onClick={closeBookingModal}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                className="p-2 hover:bg-gray-800 rounded-full transition-colors duration-300 text-white"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-0">
