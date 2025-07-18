@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/chat': {
-        target: 'https://stefan0987.app.n8n.cloud/webhook/156b9b80-a524-4116-9b0a-f93aa729a5ea',
+        target: 'https://stefan0987.app.n8n.cloud/webhook-te',
         changeOrigin: true,
         rewrite: (path) => '',
         secure: true

@@ -2,17 +2,17 @@ import API_CONFIG from '../config/api';
 
 export async function sendChatMessage(message: string, sessionId: string) {
   try {
-    const response = await fetch(API_CONFIG.CHAT_ENDPOINT, {
-      method: 'POST',
+    const params = new URLSearchParams({
+      message,
+      timestamp: new Date().toISOString(),
+      sessionId
+    });
+    
+    const response = await fetch(`${API_CONFIG.CHAT_ENDPOINT}?${params}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        message,
-        timestamp: new Date().toISOString(),
-        sessionId
-      })
+      }
     });
 
     if (!response.ok) {
