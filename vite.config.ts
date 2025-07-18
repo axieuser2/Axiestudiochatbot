@@ -9,7 +9,7 @@ export default defineConfig({
       '/api/chat': {
         target: 'https://stefan0987.app.n8n.cloud/webhook/156b9b80-a524-4116-9b0a-f93aa729a5ea',
         changeOrigin: true,
-        rewrite: (path) => '',
+        rewrite: (path) => path.replace('/api/chat', ''),
         secure: true
       }
     }
