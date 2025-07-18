@@ -73,25 +73,30 @@ const ChatInterface: React.FC = () => {
         let shouldShowBooking = false;
         let responseText = '';
         
+        // Handle different response formats
         if (typeof data === 'string') {
-          try {
-            const parsed = JSON.parse(data);
-            shouldShowBooking = parsed.showBookingPopup === true;
-            if (shouldShowBooking) {
-              responseText = 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!';
-            } else {
-              responseText = parsed.message || parsed.response || parsed.output || 'Jag fick ditt meddelande.';
+          // Check if it's JSON string
+          if (data.trim().startsWith('{') && data.trim().endsWith('}')) {
+            try {
+              const parsed = JSON.parse(data);
+              shouldShowBooking = parsed.showBookingPopup === true;
+              responseText = shouldShowBooking ? 
+                'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!' : 
+                (parsed.message || parsed.response || data);
+            } catch {
+              responseText = data;
             }
-          } catch {
+          } else {
             responseText = data;
           }
-        } else {
+        } else if (data && typeof data === 'object') {
+          // Handle object response
           shouldShowBooking = data.showBookingPopup === true;
-          if (shouldShowBooking) {
-            responseText = 'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!';
-          } else {
-            responseText = data.message || data.response || data.output || 'Jag fick ditt meddelande.';
-          }
+          responseText = shouldShowBooking ? 
+            'Jag öppnar bokningsmodulen för dig! / I\'m opening the booking modal for you!' : 
+            (data.message || data.response || data.output || 'Jag fick ditt meddelande.');
+        } else {
+          responseText = 'Jag fick ditt meddelande.';
         }
 
         const botMessage: Message = {
@@ -107,9 +112,7 @@ const ChatInterface: React.FC = () => {
         
         // Open booking modal if needed
         if (shouldShowBooking) {
-          setTimeout(() => {
-            setShowBookingModal(true);
-          }, 500);
+          setShowBookingModal(true);
         }
       }, 1000);
 
