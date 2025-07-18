@@ -90,9 +90,28 @@ const ChatInterface: React.FC = () => {
 
       // Simulate typing delay for better UX
       setTimeout(() => {
+        // Parse the response properly - don't show raw JSON
+        let responseText = '';
+        
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.showBookingPopup) {
+              // This should have been caught above, but just in case
+              setShowBookingModal(true);
+              return;
+            }
+            responseText = parsed.message || parsed.response || parsed.output || 'Jag fick ditt meddelande.';
+          } catch {
+            responseText = data;
+          }
+        } else {
+          responseText = data.message || data.response || data.output || 'Jag fick ditt meddelande.';
+        }
+
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.message || data.response || data.output || 'Jag fick ditt meddelande.',
+          text: responseText,
           sender: 'bot',
           timestamp: new Date()
         };
