@@ -68,7 +68,7 @@ const ChatInterface: React.FC = () => {
       setConnectionStatus('connected');
 
       // Check for booking popup trigger
-      if (data.showBookingPopup) {
+      if (data.showBookingPopup || (data.output && data.output.showBookingPopup)) {
         // Show a nice message before opening the popup
         const bookingMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -85,9 +85,6 @@ const ChatInterface: React.FC = () => {
         setTimeout(() => {
           setShowBookingModal(true);
         }, 500);
-        setShowBookingModal(true);
-        setIsTyping(false);
-        setIsLoading(false);
         return;
       }
 
