@@ -79,7 +79,7 @@ const ChatInterface: React.FC = () => {
       setTimeout(() => {
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.message || data.response || 'Jag fick ditt meddelande.',
+          text: data.message || data.response || data.output || 'Jag fick ditt meddelande.',
           sender: 'bot',
           timestamp: new Date()
         };
