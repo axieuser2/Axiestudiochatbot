@@ -1,9 +1,8 @@
-// Secure API proxy to hide webhook URL from client
-const WEBHOOK_URL = 'https://stefan0987.app.n8n.cloud/webhook/156b9b80-a524-4116-9b0a-f93aa729a5ea';
+import API_CONFIG from '../config/api';
 
 export async function sendChatMessage(message: string, sessionId: string) {
   try {
-    const response = await fetch(WEBHOOK_URL, {
+    const response = await fetch(API_CONFIG.CHAT_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
